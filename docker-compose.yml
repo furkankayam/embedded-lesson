@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+
+  app:
+    build: ./backend/.
+    container_name: app
+    ports:
+      - "9090:9090"
+    environment:
+      - DATABASE_URL=jdbc:postgresql://postgresql_db:5432/gomulu
+      - DATABASE_USERNAME=postgres
+      - DATABASE_PASSWORD=postgres
+    depends_on:
+      - postgresql_db
+      - mqtt
+    networks:
+      - my-network
+
+  postgresql_db:
+    image: postgres:15.2
+    restart: always
+    container_name: postgresql_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - my-network
+
+  frontend:
+    build: ./web-app-react/.
+    container_name: frontend
+    ports:
+      - "80:8080"
+    networks:
+      - my-network
+
+  mqtt:
+    image: eclipse-mosquitto
+    container_name: mqtt
+    restart: always
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mqtt/config:/mosquitto/config
+      - ./mqtt/data:/mosquitto/data
+      - ./mqtt/log:/mosquitto/log
+
+volumes:
+  postgres_data:
+  config:
+  data:
+  log:
+
+
+networks:
+  my-network:
+    driver: bridge
